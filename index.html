@@ -10,6 +10,19 @@
     <meta property="og:description" content="서울·경기 전 지역 아파트 실거래가 조회 · 평당가 추이 · 대출 계산기" />
     <meta property="og:type" content="website" />
     <meta property="og:locale" content="ko_KR" />
+    <!-- Google tag (gtag.js) — 로컬 개발 환경에서는 로드하지 않음 -->
+    <script>
+      if (!['localhost', '127.0.0.1'].includes(location.hostname)) {
+        var gaScript = document.createElement('script');
+        gaScript.async = true;
+        gaScript.src = 'https://www.googletagmanager.com/gtag/js?id=G-BEHRJ9SCM0';
+        document.head.appendChild(gaScript);
+        window.dataLayer = window.dataLayer || [];
+        window.gtag = function () { dataLayer.push(arguments); };
+        gtag('js', new Date());
+        gtag('config', 'G-BEHRJ9SCM0');
+      }
+    </script>
   </head>
   <body>
     <div id="root"></div>

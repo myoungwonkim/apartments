@@ -22,6 +22,7 @@ export default function Privacy() {
           서비스는 Google AdMob(앱)·광고 네트워크(웹)를 통해 광고를 게재하며,
           이 과정에서 광고 사업자가 광고 식별자와 쿠키를 사용해 맞춤 광고를 제공할 수 있습니다.
           맞춤 광고는 기기 설정(Android: 설정 → Google → 광고)에서 제한할 수 있습니다.
+          또한 방문 통계 분석을 위해 Google Analytics를 사용하며, 이 과정에서 쿠키가 이용됩니다.
         </p>
 
         <div className="section-title" style={{ marginTop: 20 }}>4. 데이터 출처</div>
