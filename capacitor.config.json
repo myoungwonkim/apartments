@@ -1,0 +1,8 @@
+{
+  "appId": "com.nolsoop.apartments",
+  "appName": "팔린아파트",
+  "webDir": "dist",
+  "android": {
+    "allowMixedContent": false
+  }
+}
