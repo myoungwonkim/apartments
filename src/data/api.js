@@ -99,7 +99,7 @@ export async function fetchAptTrades(districtName, dealYmd) {
   if (!lawdCd) throw new Error(`법정동 코드 없음: ${districtName}`);
 
   const res = await fetch(`${PROXY_URL}/apt-trade?lawdCd=${lawdCd}&dealYmd=${dealYmd}`, {
-    signal: AbortSignal.timeout(8000),
+    signal: AbortSignal.timeout(30000),
     cache: 'no-store', // 프록시 장애 시의 에러 응답이 브라우저에 캐시되는 것 방지
   });
   if (!res.ok) throw new Error(`프록시 응답 오류 (HTTP ${res.status})`);
@@ -154,7 +154,7 @@ export async function fetchAptRents(districtName, dealYmd) {
   if (!lawdCd) throw new Error(`법정동 코드 없음: ${districtName}`);
 
   const res = await fetch(`${PROXY_URL}/apt-rent?lawdCd=${lawdCd}&dealYmd=${dealYmd}`, {
-    signal: AbortSignal.timeout(8000),
+    signal: AbortSignal.timeout(30000),
     cache: 'no-store',
   });
   if (!res.ok) throw new Error(`프록시 응답 오류 (HTTP ${res.status})`);

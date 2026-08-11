@@ -24,7 +24,9 @@ const SORTS = [
   { key: 'areaAsc', label: '면적 좁은순' },
 ];
 
-function TradeCard({ r, district }) {
+const shortOf = (name) => REGION_DISTRICTS.find((d) => d.name === name)?.short || name;
+
+function TradeCard({ r }) {
   const pyeong = Math.round((r.areaM2 / 3.3058) * 10) / 10;
   const label = r.kind === '월세' ? `${fmtPrice(r.price)}/${r.monthly}` : fmtPrice(r.price);
   const oldEnough = r.builtYear && new Date().getFullYear() - r.builtYear >= 30;
@@ -32,11 +34,11 @@ function TradeCard({ r, district }) {
   return (
     <Link
       className="listing-card"
-      to={`/complex/${encodeURIComponent(district)}/${encodeURIComponent(r.dong)}/${encodeURIComponent(r.complex)}`}
+      to={`/complex/${encodeURIComponent(r.district)}/${encodeURIComponent(r.dong)}/${encodeURIComponent(r.complex)}`}
     >
       <div className="lc-top">
         <span className={`badge ${BADGE_CLASS[r.kind]}`}>{r.kind}</span>
-        <span className="lc-district">{r.dong}</span>
+        <span className="lc-district">{shortOf(r.district)} {r.dong}</span>
         <span className="diff-tag" style={{ color: 'var(--text-weak)' }}>계약 {r.date}</span>
       </div>
       <div className="lc-price">{label}</div>
@@ -60,7 +62,9 @@ function TradeCard({ r, district }) {
 
 export default function Home() {
   const [region, setRegion] = useState('서울');
-  const [district, setDistrict] = useState('강남구');
+  const [district, setDistrict] = useState('전체');
+  const [progress, setProgress] = useState({ done: 0, total: 1 });
+  const [failedDistricts, setFailedDistricts] = useState([]);
   const [type, setType] = useState('전체');
   const [query, setQuery] = useState('');
   const [areaKey, setAreaKey] = useState('전체');
@@ -75,31 +79,36 @@ export default function Home() {
   const regionDistricts = REGION_DISTRICTS.filter((d) => d.region === region);
   const switchRegion = (r) => {
     setRegion(r);
-    setDistrict(REGION_DISTRICTS.find((d) => d.region === r).name);
+    setDistrict('전체');
   };
 
-  // 실거래 조회: 매매 3개월 + 전월세 2개월
+  // 실거래 조회: 매매 3개월 + 전월세 2개월. "전체" 선택 시 권역 내 모든 지역을 병렬 조회.
   useEffect(() => {
     let alive = true;
     setStatus('loading');
     setVisible(30);
-    Promise.allSettled([
-      fetchRecentAptTrades(district, 3),
-      fetchRecentAptRents(district, 2),
-    ]).then(([t, r]) => {
-      if (!alive) return;
-      const day = (sk) => `${sk.slice(4, 6)}.${sk.slice(6, 8)}`;
+    const names = district === '전체'
+      ? REGION_DISTRICTS.filter((d) => d.region === region).map((d) => d.name)
+      : [district];
+    setProgress({ done: 0, total: names.length });
+    const day = (sk) => `${sk.slice(4, 6)}.${sk.slice(6, 8)}`;
+
+    // 한 지역 조회 + 시세 대비 계산(해당 구 안에서만 비교)
+    const fetchOne = async (nm) => {
+      const [t, r] = await Promise.allSettled([
+        fetchRecentAptTrades(nm, 3),
+        fetchRecentAptRents(nm, 2),
+      ]);
       const sales = t.status === 'fulfilled' ? t.value.map((x) => ({
-        kind: '매매', price: x.price, monthly: null,
+        district: nm, kind: '매매', price: x.price, monthly: null,
         complex: x.complex, dong: x.dong, areaM2: x.areaM2, floor: x.floor,
         builtYear: x.builtYear, date: day(x.sortKey), sortKey: x.sortKey,
       })) : [];
       const rents = r.status === 'fulfilled' ? r.value.map((x) => ({
-        kind: x.type, price: x.deposit, monthly: x.monthly || null,
+        district: nm, kind: x.type, price: x.deposit, monthly: x.monthly || null,
         complex: x.complex, dong: x.dong, areaM2: x.areaM2, floor: x.floor,
         builtYear: x.builtYear, date: day(x.sortKey), sortKey: x.sortKey,
       })) : [];
-      // 주변 시세 대비: 같은 단지·비슷한 면적(±3m²)의 다른 매매와 비교, 표본 부족 시 구 평균 평당가와 비교
       const ppp = (x) => x.price / (x.areaM2 / 3.3058);
       const avgPpp = sales.length ? sales.reduce((a, x) => a + ppp(x), 0) / sales.length : 0;
       for (const s of sales) {
@@ -114,17 +123,41 @@ export default function Home() {
           s.diffBase = '구 평균';
         }
       }
-      const all = [...sales, ...rents].sort((a, b) => b.sortKey.localeCompare(a.sortKey));
+      // 매매·전월세 조회가 모두 실패한 지역은 "누락"으로 기록 (조용히 빠뜨리지 않기 위해)
+      const failed = t.status === 'rejected' && r.status === 'rejected';
+      return { recs: [...sales, ...rents], failed, name: nm };
+    };
+
+    setFailedDistricts([]);
+    // 브라우저가 수백 개 요청을 동시에 던지면 일부를 즉시 거절하므로, 지역을 8개씩 나눠 순차 처리
+    const CHUNK = 8;
+    (async () => {
+      const rs = [];
+      for (let i = 0; i < names.length && alive; i += CHUNK) {
+        const batch = await Promise.allSettled(
+          names.slice(i, i + CHUNK).map((nm) => fetchOne(nm).then((out) => {
+            if (alive) setProgress((p) => ({ ...p, done: p.done + 1 }));
+            return out;
+          }))
+        );
+        rs.push(...batch);
+      }
+      if (!alive) return;
+      const ok = rs.filter((x) => x.status === 'fulfilled').map((x) => x.value);
+      const all = ok.flatMap((x) => x.recs)
+        .sort((a, b) => b.sortKey.localeCompare(a.sortKey));
+      setFailedDistricts(ok.filter((x) => x.failed).map((x) => x.name));
       if (all.length) { setRecords(all); setStatus('real'); }
       else setStatus('demo');
-    });
+    })();
     return () => { alive = false; };
-  }, [district]);
+  }, [district, region]);
 
-  // 향후 가치 전망 (실거래 14개월 시계열 기반). 실패하면 카드 자체를 숨김 — 가짜로 채우지 않음.
+  // 향후 가치 전망 (실거래 14개월 시계열 기반). 특정 지역 선택 시에만 — 전체 보기에서는 표시하지 않음.
   useEffect(() => {
     let alive = true;
     setOutlook(null);
+    if (district === '전체') return;
     fetchPppSeries(district)
       .then((s) => { if (alive) setOutlook(outlookFromSeries(s)); })
       .catch(() => { if (alive) setOutlook(null); });
@@ -158,7 +191,9 @@ export default function Home() {
     return out;
   }, [records, type, query, areaKey, priceMin, priceMax, sort]);
 
-  const demoListings = listings.filter((l) => l.district === district);
+  const demoListings = listings.filter((l) =>
+    district === '전체' ? l.region === region : l.district === district
+  );
 
   return (
     <div className="page container">
@@ -169,7 +204,7 @@ export default function Home() {
       </h1>
       <p className="page-sub">
         호가 매물이 아니라 국토부에 신고된 <b>실제 계약</b>입니다 (아파트 매매 3개월 · 전월세 2개월).
-        {status === 'real' && <> {district} <b>{records.length.toLocaleString()}건</b>{filtered.length !== records.length && <> · 필터 결과 {filtered.length.toLocaleString()}건</>}</>}
+        {status === 'real' && <> {district === '전체' ? `${region} 전체` : district} <b>{records.length.toLocaleString()}건</b>{filtered.length !== records.length && <> · 필터 결과 {filtered.length.toLocaleString()}건</>}</>}
       </p>
 
       <div className="filters">
@@ -179,6 +214,7 @@ export default function Home() {
           </button>
         ))}
         <select className="chip" value={district} onChange={(e) => setDistrict(e.target.value)}>
+          <option value="전체">{region} 전체</option>
           {regionDistricts.map((d) => (
             <option key={d.name} value={d.name}>{d.name}</option>
           ))}
@@ -215,7 +251,18 @@ export default function Home() {
       </div>
 
       {status === 'loading' && (
-        <p className="page-sub">{district} 실거래를 불러오는 중… (최초 조회는 수 초 걸릴 수 있어요)</p>
+        <p className="page-sub">
+          {district === '전체'
+            ? `${region} 전체 실거래 집계 중… (${progress.done}/${progress.total} 지역)`
+            : `${district} 실거래를 불러오는 중… (최초 조회는 수 초 걸릴 수 있어요)`}
+        </p>
+      )}
+
+      {status === 'real' && failedDistricts.length > 0 && (
+        <p className="hint" style={{ margin: '0 0 14px' }}>
+          ⚠ {failedDistricts.length}개 지역({failedDistricts.slice(0, 5).join(', ')}{failedDistricts.length > 5 ? ' 외' : ''})은
+          일시적으로 집계하지 못했습니다. 표시된 건수에 해당 지역은 빠져 있으며, 새로고침하면 다시 시도합니다.
+        </p>
       )}
 
       {status === 'real' && outlook && (
@@ -251,7 +298,7 @@ export default function Home() {
       {status === 'real' && (
         <>
           <div className="listing-grid">
-            {filtered.slice(0, visible).map((r, i) => <TradeCard key={i} r={r} district={district} />)}
+            {filtered.slice(0, visible).map((r, i) => <TradeCard key={i} r={r} />)}
           </div>
           {filtered.length === 0 && <p className="page-sub" style={{ marginTop: 16 }}>조건에 맞는 거래가 없어요. 필터를 조정해 보세요.</p>}
           {filtered.length > visible && (
