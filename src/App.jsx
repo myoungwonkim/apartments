@@ -1,7 +1,6 @@
 import { Routes, Route, NavLink, Link, useLocation } from 'react-router-dom';
 import { useEffect } from 'react';
 import Home from './pages/Home.jsx';
-import MapPage from './pages/MapPage.jsx';
 import Detail from './pages/Detail.jsx';
 import Market from './pages/Market.jsx';
 import Calc from './pages/Calc.jsx';
@@ -21,7 +20,6 @@ export default function App() {
           <NavLink to="/" className="logo">팔린아파트</NavLink>
           <nav className="nav">
             <NavLink to="/" end>홈</NavLink>
-            <NavLink to="/map">지도</NavLink>
             <NavLink to="/market">시세</NavLink>
             <NavLink to="/calc">계산기</NavLink>
           </nav>
@@ -29,7 +27,6 @@ export default function App() {
       </header>
       <Routes>
         <Route path="/" element={<Home />} />
-        <Route path="/map" element={<MapPage />} />
         <Route path="/listing/:id" element={<Detail />} />
         <Route path="/market" element={<Market />} />
         <Route path="/calc" element={<Calc />} />
