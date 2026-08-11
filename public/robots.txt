@@ -1,2 +1,4 @@
 User-agent: *
 Allow: /
+
+Sitemap: https://apartments.nolsoopgames.com/sitemap.xml
