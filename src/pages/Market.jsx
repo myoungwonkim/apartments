@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import {
   BarChart, Bar, Cell, LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid,
 } from 'recharts';
@@ -226,7 +227,11 @@ export default function Market() {
                 {rentFiltered.map((r, i) => (
                   <tr key={i}>
                     <td>{r.date}</td>
-                    <td>{r.dong} {r.complex}</td>
+                    <td>
+                      <Link to={`/complex/${encodeURIComponent(district)}/${encodeURIComponent(r.dong)}/${encodeURIComponent(r.complex)}`} style={{ color: 'var(--blue-dark)' }}>
+                        {r.dong} {r.complex}
+                      </Link>
+                    </td>
                     <td>{r.areaM2}m²</td>
                     <td>{r.floor}층</td>
                     <td className="num">{rentType === '월세' ? `${fmtPrice(r.deposit)}/${r.monthly}` : fmtPrice(r.deposit)}</td>
@@ -258,7 +263,13 @@ export default function Market() {
               {(tradeStatus === 'real' ? realTrades : trades).map((t, i) => (
                 <tr key={i}>
                   <td>{tradeStatus === 'real' ? `${t.ym.slice(5)}.${t.date.split('.')[1]}` : t.date}</td>
-                  <td>{tradeStatus === 'real' && t.dong ? `${t.dong} ${t.complex}` : t.complex}</td>
+                  <td>
+                    {tradeStatus === 'real' && t.dong ? (
+                      <Link to={`/complex/${encodeURIComponent(district)}/${encodeURIComponent(t.dong)}/${encodeURIComponent(t.complex)}`} style={{ color: 'var(--blue-dark)' }}>
+                        {t.dong} {t.complex}
+                      </Link>
+                    ) : t.complex}
+                  </td>
                   <td>{t.areaM2}m²</td>
                   <td>{t.floor}층</td>
                   <td className="num">{fmtPrice(t.price)}</td>

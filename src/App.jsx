@@ -2,6 +2,7 @@ import { Routes, Route, NavLink, Link, useLocation } from 'react-router-dom';
 import { useEffect } from 'react';
 import Home from './pages/Home.jsx';
 import Detail from './pages/Detail.jsx';
+import ComplexDetail from './pages/ComplexDetail.jsx';
 import Market from './pages/Market.jsx';
 import Calc from './pages/Calc.jsx';
 import Privacy from './pages/Privacy.jsx';
@@ -28,6 +29,7 @@ export default function App() {
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/listing/:id" element={<Detail />} />
+        <Route path="/complex/:district/:dong/:name" element={<ComplexDetail />} />
         <Route path="/market" element={<Market />} />
         <Route path="/calc" element={<Calc />} />
         <Route path="/privacy" element={<Privacy />} />

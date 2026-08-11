@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { REGIONS, listings, fmtPrice } from '../data/mock.js';
 import {
   REGION_DISTRICTS, fetchRecentAptTrades, fetchRecentAptRents, fetchPppSeries, outlookFromSeries,
@@ -23,13 +24,16 @@ const SORTS = [
   { key: 'areaAsc', label: '면적 좁은순' },
 ];
 
-function TradeCard({ r }) {
+function TradeCard({ r, district }) {
   const pyeong = Math.round((r.areaM2 / 3.3058) * 10) / 10;
   const label = r.kind === '월세' ? `${fmtPrice(r.price)}/${r.monthly}` : fmtPrice(r.price);
   const oldEnough = r.builtYear && new Date().getFullYear() - r.builtYear >= 30;
   const showDiff = r.kind === '매매' && r.diffPct != null && Math.abs(r.diffPct) <= 60;
   return (
-    <div className="listing-card" style={{ cursor: 'default' }}>
+    <Link
+      className="listing-card"
+      to={`/complex/${encodeURIComponent(district)}/${encodeURIComponent(r.dong)}/${encodeURIComponent(r.complex)}`}
+    >
       <div className="lc-top">
         <span className={`badge ${BADGE_CLASS[r.kind]}`}>{r.kind}</span>
         <span className="lc-district">{r.dong}</span>
@@ -50,7 +54,7 @@ function TradeCard({ r }) {
           {oldEnough && <span className="infra-tag issue">준공 30년+ · 재건축 연한</span>}
         </div>
       )}
-    </div>
+    </Link>
   );
 }
 
@@ -247,7 +251,7 @@ export default function Home() {
       {status === 'real' && (
         <>
           <div className="listing-grid">
-            {filtered.slice(0, visible).map((r, i) => <TradeCard key={i} r={r} />)}
+            {filtered.slice(0, visible).map((r, i) => <TradeCard key={i} r={r} district={district} />)}
           </div>
           {filtered.length === 0 && <p className="page-sub" style={{ marginTop: 16 }}>조건에 맞는 거래가 없어요. 필터를 조정해 보세요.</p>}
           {filtered.length > visible && (

@@ -188,6 +188,26 @@ export async function fetchRecentAptRents(districtName, months = 2) {
   return results.flat().sort((a, b) => b.sortKey.localeCompare(a.sortKey));
 }
 
+// 단지별 거래 이력 (매매+전월세, 최근 N개월).
+// 단지명은 신고서마다 공백·하이픈 표기가 달라질 수 있어 제거 후 비교한다.
+const normName = (s) => (s || '').replace(/[\s\-]/g, '');
+
+export async function fetchComplexHistory(districtName, dong, complexName, months = 12) {
+  const yms = monthKeys(months);
+  const [tradeResults, rentResults] = await Promise.all([
+    Promise.allSettled(yms.map((ym) => fetchAptTrades(districtName, ym))),
+    Promise.allSettled(yms.map((ym) => fetchAptRents(districtName, ym))),
+  ]);
+  const target = normName(complexName);
+  const inComplex = (x) => x.dong === dong && normName(x.complex) === target;
+  const pickOk = (rs) => rs.filter((r) => r.status === 'fulfilled').flatMap((r) => r.value);
+  const sales = pickOk(tradeResults).filter(inComplex)
+    .sort((a, b) => b.sortKey.localeCompare(a.sortKey));
+  const rents = pickOk(rentResults).filter(inComplex)
+    .sort((a, b) => b.sortKey.localeCompare(a.sortKey));
+  return { sales, rents };
+}
+
 // 실거래 기반 향후 가치 전망 (구 단위, 규칙 기반).
 // 전부 실거래 신고 데이터에서 계산: 시세 모멘텀(3개월·전년), 거래량 변화.
 // 매물·호가·급매 정보는 공공데이터에 없으므로 반영하지 않는다 (UI에 고지할 것).
