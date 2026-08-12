@@ -32,6 +32,7 @@ function TradeRow({ r }) {
   const priceColor = r.kind === '전세' ? '#0a8a4a' : r.kind === '월세' ? '#c76b00' : 'var(--text)';
   const label = r.kind === '월세' ? `${fmtPrice(r.price)}/${r.monthly}` : fmtPrice(r.price);
   const showDiff = r.kind === '매매' && r.diffPct != null && Math.abs(r.diffPct) <= 60;
+  const oldEnough = r.builtYear && new Date().getFullYear() - r.builtYear >= 30;
   return (
     <Link className="trade-row" to={complexPath(r)}>
       <div>
@@ -45,11 +46,12 @@ function TradeRow({ r }) {
         <div className="tr-sub">
           {showDiff ? (
             <span style={{ color: r.diffPct > 0 ? 'var(--red)' : r.diffPct < 0 ? 'var(--blue)' : 'var(--text-weak)' }}>
-              {r.diffPct > 0 ? '+' : ''}{r.diffPct}%
+              {r.diffBase} {r.diffPct > 0 ? '+' : ''}{r.diffPct}%
             </span>
           ) : (
             <span style={{ color: 'var(--text-weak)' }}>{r.kind}</span>
           )}
+          {oldEnough && <span className="tr-rebuild">재건축 연한</span>}
         </div>
       </div>
     </Link>
@@ -306,6 +308,12 @@ export default function Home() {
         <p className="hint" style={{ margin: '0 0 14px' }}>
           ⚠ {failedDistricts.length}개 지역({failedDistricts.slice(0, 5).join(', ')}{failedDistricts.length > 5 ? ' 외' : ''})은
           일시적으로 집계하지 못했습니다. 표시된 건수에 해당 지역은 빠져 있으며, 새로고침하면 다시 시도합니다.
+        </p>
+      )}
+
+      {status === 'real' && district === '전체' && (
+        <p className="hint" style={{ margin: '0 0 14px' }}>
+          💡 위에서 특정 구를 선택하면 그 지역의 <b>향후 가치 전망</b>(시세 모멘텀·거래량 기반)이 함께 표시됩니다.
         </p>
       )}
 
