@@ -5,6 +5,7 @@ import {
 } from 'recharts';
 import { DISTRICTS, REGIONS, getPriceSeries, getRecentTrades, getMarketCondition, fmtPrice, DATA_SOURCE } from '../data/mock.js';
 import { REGION_DISTRICTS, fetchRecentAptTrades, fetchRecentAptRents, fetchPppSeries } from '../data/api.js';
+import useTitle from '../useTitle.js';
 
 const Delta = ({ v }) =>
   v == null ? <span style={{ color: 'var(--text-weak)' }}>-</span> : (
@@ -26,6 +27,8 @@ export default function Market() {
   const [rents, setRents] = useState([]);
   const [rentStatus, setRentStatus] = useState('loading');   // loading | real | error
   const [rentType, setRentType] = useState('전세');
+
+  useTitle(`${district} 아파트 시세·평당가 추이`);
 
   const regionDistricts = REGION_DISTRICTS.filter((d) => d.region === region);
   const switchRegion = (r) => {

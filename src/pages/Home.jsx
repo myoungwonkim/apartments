@@ -5,6 +5,7 @@ import {
   REGION_DISTRICTS, fetchRecentAptTrades, fetchRecentAptRents, fetchPppSeries, outlookFromSeries,
 } from '../data/api.js';
 import ListingCard from '../components/ListingCard.jsx';
+import useTitle from '../useTitle.js';
 
 const TYPES = ['전체', '매매', '전세', '월세'];
 const BADGE_CLASS = { 매매: '', 전세: 'jeonse', 월세: 'wolse' };
@@ -117,6 +118,8 @@ export default function Home() {
     try { return (localStorage.getItem('pallin_view') || 'list') === 'list' ? 60 : 30; } catch { return 60; }
   });
   const [outlook, setOutlook] = useState(null); // outlookFromSeries 결과 또는 null
+
+  useTitle(district === '전체' ? null : `${district} 아파트 실거래가 조회`);
 
   const regionDistricts = REGION_DISTRICTS.filter((d) => d.region === region);
   const switchRegion = (r) => {

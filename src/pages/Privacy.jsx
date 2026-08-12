@@ -1,4 +1,7 @@
+import useTitle from '../useTitle.js';
+
 export default function Privacy() {
+  useTitle('개인정보처리방침');
   return (
     <div className="page container" style={{ maxWidth: 720 }}>
       <h1 className="page-title">개인정보처리방침</h1>

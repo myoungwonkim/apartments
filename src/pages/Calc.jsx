@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { fmtPrice } from '../data/mock.js';
+import useTitle from '../useTitle.js';
 
 // 원리금균등 월 상환액 (원금 P만원, 연이율 rate%, n개월)
 function monthlyPayment(P, rate, n) {
@@ -171,6 +172,7 @@ const TABS = [
 
 export default function Calc() {
   const [tab, setTab] = useState('대출 한도');
+  useTitle('부동산 계산기 — 주담대 한도·월 상환액·취득세');
   return (
     <div className="page container" style={{ maxWidth: 620 }}>
       <h1 className="page-title">계산기</h1>

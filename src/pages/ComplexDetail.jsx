@@ -5,6 +5,7 @@ import {
 } from 'recharts';
 import { fmtPrice } from '../data/mock.js';
 import { fetchComplexHistory } from '../data/api.js';
+import useTitle from '../useTitle.js';
 
 const LINE_COLORS = ['#3182f6', '#0a8a4a', '#c76b00'];
 
@@ -13,6 +14,8 @@ export default function ComplexDetail() {
   const [data, setData] = useState({ sales: [], rents: [] });
   const [status, setStatus] = useState('loading'); // loading | ok | empty | error
   const [tab, setTab] = useState('매매');
+
+  useTitle(`${name} 실거래가 — ${district} ${dong} 매매·전세 이력`);
 
   useEffect(() => {
     let alive = true;
