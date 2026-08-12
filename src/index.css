@@ -195,6 +195,30 @@ body.has-app-banner { padding-bottom: 70px; }
 .map-filters { position: absolute; top: 12px; right: 12px; z-index: 800; display: flex; flex-direction: column; align-items: flex-end; gap: 6px; }
 .map-filter-row { display: flex; gap: 6px; }
 
+/* ---- 리스트 뷰 + 토글 ---- */
+.view-toggle { display: flex; background: var(--bg); border-radius: 10px; padding: 3px; margin-left: auto; }
+.view-toggle button {
+  border: none; background: transparent; padding: 6px 12px; border-radius: 8px;
+  font-size: 13px; font-weight: 600; color: var(--text-weak);
+}
+.view-toggle button.on { background: var(--card); color: var(--text); font-weight: 700; box-shadow: 0 1px 2px rgba(0,0,0,0.06); }
+.trade-row {
+  display: flex; justify-content: space-between; align-items: center; gap: 10px;
+  background: var(--card); border: 0.5px solid var(--line); border-radius: 10px;
+  padding: 10px 14px; margin-bottom: 6px; transition: border-color 0.12s;
+}
+.trade-row:hover { border-color: var(--blue); }
+.tr-name { font-size: 14px; font-weight: 600; }
+.tr-loc { font-size: 12px; color: var(--text-weak); font-weight: 400; margin-left: 4px; }
+.tr-meta { font-size: 12px; color: var(--text-weak); margin-top: 1px; }
+.tr-right { text-align: right; flex-shrink: 0; }
+.tr-price { font-size: 15px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.tr-sub { font-size: 12px; font-weight: 600; }
+.date-head { display: flex; align-items: center; gap: 8px; margin: 14px 0 8px; }
+.date-pill { background: var(--text); color: var(--card); font-size: 12px; font-weight: 700; padding: 3px 10px; border-radius: 999px; }
+.date-count { font-size: 12px; color: var(--text-weak); }
+.date-line { flex: 1; height: 1px; background: var(--line); }
+
 .stat-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 14px; margin-bottom: 24px; }
 .stat { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); padding: 18px 20px; }
 .stat .label { font-size: 13px; color: var(--text-weak); margin-bottom: 4px; }

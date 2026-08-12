@@ -25,6 +25,36 @@ const SORTS = [
 ];
 
 const shortOf = (name) => REGION_DISTRICTS.find((d) => d.name === name)?.short || name;
+const complexPath = (r) =>
+  `/complex/${encodeURIComponent(r.district)}/${encodeURIComponent(r.dong)}/${encodeURIComponent(r.complex)}`;
+
+function TradeRow({ r }) {
+  const priceColor = r.kind === '전세' ? '#0a8a4a' : r.kind === '월세' ? '#c76b00' : 'var(--text)';
+  const label = r.kind === '월세' ? `${fmtPrice(r.price)}/${r.monthly}` : fmtPrice(r.price);
+  const showDiff = r.kind === '매매' && r.diffPct != null && Math.abs(r.diffPct) <= 60;
+  return (
+    <Link className="trade-row" to={complexPath(r)}>
+      <div>
+        <div className="tr-name">{r.complex}<span className="tr-loc">{shortOf(r.district)} {r.dong}</span></div>
+        <div className="tr-meta">
+          {r.kind} · {r.areaM2}m² · {r.floor}층{r.builtYear ? ` · '${String(r.builtYear).slice(2)}준공` : ''} · 계약 {r.date}
+        </div>
+      </div>
+      <div className="tr-right">
+        <div className="tr-price" style={{ color: priceColor }}>{label}</div>
+        <div className="tr-sub">
+          {showDiff ? (
+            <span style={{ color: r.diffPct > 0 ? 'var(--red)' : r.diffPct < 0 ? 'var(--blue)' : 'var(--text-weak)' }}>
+              {r.diffPct > 0 ? '+' : ''}{r.diffPct}%
+            </span>
+          ) : (
+            <span style={{ color: 'var(--text-weak)' }}>{r.kind}</span>
+          )}
+        </div>
+      </div>
+    </Link>
+  );
+}
 
 function TradeCard({ r }) {
   const pyeong = Math.round((r.areaM2 / 3.3058) * 10) / 10;
@@ -34,7 +64,7 @@ function TradeCard({ r }) {
   return (
     <Link
       className="listing-card"
-      to={`/complex/${encodeURIComponent(r.district)}/${encodeURIComponent(r.dong)}/${encodeURIComponent(r.complex)}`}
+      to={complexPath(r)}
     >
       <div className="lc-top">
         <span className={`badge ${BADGE_CLASS[r.kind]}`}>{r.kind}</span>
@@ -71,9 +101,19 @@ export default function Home() {
   const [priceMin, setPriceMin] = useState(''); // 억 단위
   const [priceMax, setPriceMax] = useState('');
   const [sort, setSort] = useState('recent');
+  const [view, setViewState] = useState(() => {
+    try { return localStorage.getItem('pallin_view') || 'list'; } catch { return 'list'; }
+  });
+  const setView = (v) => {
+    setViewState(v);
+    setVisible(v === 'list' ? 60 : 30);
+    try { localStorage.setItem('pallin_view', v); } catch { /* 시크릿 모드 등 저장 불가 시 무시 */ }
+  };
   const [records, setRecords] = useState([]);
   const [status, setStatus] = useState('loading'); // loading | real | demo
-  const [visible, setVisible] = useState(30);
+  const [visible, setVisible] = useState(() => {
+    try { return (localStorage.getItem('pallin_view') || 'list') === 'list' ? 60 : 30; } catch { return 60; }
+  });
   const [outlook, setOutlook] = useState(null); // outlookFromSeries 결과 또는 null
 
   const regionDistricts = REGION_DISTRICTS.filter((d) => d.region === region);
@@ -86,7 +126,7 @@ export default function Home() {
   useEffect(() => {
     let alive = true;
     setStatus('loading');
-    setVisible(30);
+    setVisible(view === 'list' ? 60 : 30);
     const names = district === '전체'
       ? REGION_DISTRICTS.filter((d) => d.region === region).map((d) => d.name)
       : [district];
@@ -248,6 +288,10 @@ export default function Home() {
         <select className="chip" value={sort} onChange={(e) => setSort(e.target.value)}>
           {SORTS.map((s) => <option key={s.key} value={s.key}>{s.label}</option>)}
         </select>
+        <div className="view-toggle">
+          <button className={view === 'list' ? 'on' : ''} onClick={() => setView('list')}>☰ 리스트</button>
+          <button className={view === 'card' ? 'on' : ''} onClick={() => setView('card')}>▦ 카드</button>
+        </div>
       </div>
 
       {status === 'loading' && (
@@ -297,13 +341,42 @@ export default function Home() {
 
       {status === 'real' && (
         <>
-          <div className="listing-grid">
-            {filtered.slice(0, visible).map((r, i) => <TradeCard key={i} r={r} />)}
-          </div>
+          {view === 'card' ? (
+            <div className="listing-grid">
+              {filtered.slice(0, visible).map((r, i) => <TradeCard key={i} r={r} />)}
+            </div>
+          ) : (
+            <div>
+              {(() => {
+                const shown = filtered.slice(0, visible);
+                // 최신순일 때만 날짜 헤더로 그룹핑
+                const dateCounts = sort === 'recent'
+                  ? filtered.reduce((m, r) => { const k = r.sortKey.slice(0, 8); m[k] = (m[k] || 0) + 1; return m; }, {})
+                  : null;
+                const out = [];
+                let lastDate = null;
+                shown.forEach((r, i) => {
+                  const dk = r.sortKey.slice(0, 8);
+                  if (sort === 'recent' && dk !== lastDate) {
+                    lastDate = dk;
+                    out.push(
+                      <div className="date-head" key={`d${dk}`}>
+                        <span className="date-pill">{Number(dk.slice(4, 6))}월 {Number(dk.slice(6, 8))}일</span>
+                        <span className="date-count">계약 {dateCounts[dk].toLocaleString()}건</span>
+                        <span className="date-line" />
+                      </div>
+                    );
+                  }
+                  out.push(<TradeRow key={i} r={r} />);
+                });
+                return out;
+              })()}
+            </div>
+          )}
           {filtered.length === 0 && <p className="page-sub" style={{ marginTop: 16 }}>조건에 맞는 거래가 없어요. 필터를 조정해 보세요.</p>}
           {filtered.length > visible && (
             <div style={{ textAlign: 'center', marginTop: 20 }}>
-              <button className="chip" onClick={() => setVisible(visible + 30)}>
+              <button className="chip" onClick={() => setVisible(visible + (view === 'list' ? 60 : 30))}>
                 더보기 ({(filtered.length - visible).toLocaleString()}건 남음)
               </button>
             </div>
