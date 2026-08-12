@@ -31,7 +31,7 @@ const complexPath = (r) =>
 function TradeRow({ r }) {
   const priceColor = r.kind === '전세' ? '#0a8a4a' : r.kind === '월세' ? '#c76b00' : 'var(--text)';
   const label = r.kind === '월세' ? `${fmtPrice(r.price)}/${r.monthly}` : fmtPrice(r.price);
-  const showDiff = r.kind === '매매' && r.diffPct != null && Math.abs(r.diffPct) <= 60;
+  const showDiff = r.kind !== '월세' && r.diffPct != null && Math.abs(r.diffPct) <= 60;
   const oldEnough = r.builtYear && new Date().getFullYear() - r.builtYear >= 30;
   return (
     <Link className="trade-row" to={complexPath(r)}>
@@ -62,7 +62,7 @@ function TradeCard({ r }) {
   const pyeong = Math.round((r.areaM2 / 3.3058) * 10) / 10;
   const label = r.kind === '월세' ? `${fmtPrice(r.price)}/${r.monthly}` : fmtPrice(r.price);
   const oldEnough = r.builtYear && new Date().getFullYear() - r.builtYear >= 30;
-  const showDiff = r.kind === '매매' && r.diffPct != null && Math.abs(r.diffPct) <= 60;
+  const showDiff = r.kind !== '월세' && r.diffPct != null && Math.abs(r.diffPct) <= 60;
   return (
     <Link
       className="listing-card"
@@ -163,6 +163,21 @@ export default function Home() {
           const est = avgPpp * (s.areaM2 / 3.3058);
           s.diffPct = Math.round(((s.price - est) / est) * 100);
           s.diffBase = '구 평균';
+        }
+      }
+      // 전세도 동일하게 시세 대비 계산 (보증금 기준). 월세는 보증금+월세 조합이라 단순 비교가 왜곡되므로 제외.
+      const jeonse = rents.filter((x) => x.kind === '전세');
+      const jAvgPpp = jeonse.length ? jeonse.reduce((a, x) => a + ppp(x), 0) / jeonse.length : 0;
+      for (const s of jeonse) {
+        const peers = jeonse.filter((o) => o !== s && o.complex === s.complex && Math.abs(o.areaM2 - s.areaM2) <= 3);
+        if (peers.length >= 2) {
+          const avg = peers.reduce((a, o) => a + o.price, 0) / peers.length;
+          s.diffPct = Math.round(((s.price - avg) / avg) * 100);
+          s.diffBase = '단지 전세';
+        } else if (jAvgPpp) {
+          const est = jAvgPpp * (s.areaM2 / 3.3058);
+          s.diffPct = Math.round(((s.price - est) / est) * 100);
+          s.diffBase = '구 전세';
         }
       }
       // 매매·전월세 조회가 모두 실패한 지역은 "누락"으로 기록 (조용히 빠뜨리지 않기 위해)
