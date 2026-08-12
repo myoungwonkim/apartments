@@ -258,7 +258,7 @@ export default function Home() {
   return (
     <div className="page container">
       <h1 className="page-title">
-        최근에 팔린 아파트
+        팔린 아파트
         {status === 'real' && <span className="badge" style={{ marginLeft: 10, verticalAlign: 'middle' }}>실데이터</span>}
         {status === 'demo' && <span className="badge wolse" style={{ marginLeft: 10, verticalAlign: 'middle' }}>데모</span>}
       </h1>
