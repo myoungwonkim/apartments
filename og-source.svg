@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="1200" viewBox="0 0 1200 1200">
+  <rect width="1200" height="1200" fill="#3182f6"/>
+  <!-- 실제 사용 영역: y 285~915 (중앙 630 밴드) -->
+  <g fill="#ffffff" opacity="0.09">
+    <rect x="80"  y="725" width="100" height="120"/>
+    <rect x="230" y="665" width="100" height="180"/>
+    <rect x="380" y="755" width="100" height="90"/>
+    <rect x="530" y="695" width="100" height="150"/>
+    <rect x="680" y="735" width="100" height="110"/>
+    <rect x="830" y="655" width="100" height="190"/>
+    <rect x="980" y="715" width="100" height="130"/>
+  </g>
+  <text x="80" y="550" font-family="Apple SD Gothic Neo, sans-serif" font-size="112" font-weight="800" fill="#ffffff">팔린아파트</text>
+  <text x="84" y="650" font-family="Apple SD Gothic Neo, sans-serif" font-size="54" font-weight="600" fill="#ffffff" opacity="0.96">부르는 값 말고, 팔린 값</text>
+  <text x="84" y="723" font-family="Apple SD Gothic Neo, sans-serif" font-size="33" font-weight="500" fill="#ffffff" opacity="0.78">국토부 신고 실거래 · 서울/경기 아파트 실거래가 조회</text>
+</svg>
