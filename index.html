@@ -6,6 +6,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>아파트 실거래가 조회 — 부르는 값 말고, 팔린 값 | 팔린아파트</title>
     <meta name="description" content="국토교통부에 신고된 진짜 계약만 보여드립니다. 서울·경기 전 지역 아파트 매매·전세·월세 실거래가 조회, 평당가 추이, 대출·취득세 계산기." />
+    <link rel="canonical" href="https://apartments.nolsoopgames.com/" />
+    <meta name="robots" content="index,follow" />
     <meta property="og:title" content="팔린아파트 — 부르는 값 말고, 팔린 값" />
     <meta property="og:description" content="서울·경기 전 지역 아파트 실거래가 조회 · 평당가 추이 · 대출 계산기" />
     <meta property="og:type" content="website" />
@@ -30,7 +32,57 @@
     </script>
   </head>
   <body>
-    <div id="root"></div>
+    <div id="root">
+      <main>
+        <h1>팔린아파트</h1>
+        <p>국토교통부에 신고된 서울·경기 아파트 매매·전세·월세 실거래가를 조회합니다. 호가가 아니라 실제 계약입니다.</p>
+        <nav>
+          <a href="/">홈</a>
+          <a href="/market">시세</a>
+          <a href="/calc">대출·취득세 계산기</a>
+          <a href="/privacy">개인정보처리방침</a>
+        </nav>
+      </main>
+    </div>
+    <script>
+      (function () {
+        var origin = "https://apartments.nolsoopgames.com";
+        var path = (location.pathname.replace(/\/+$/, "") || "/");
+        var pages = {
+          "/": {
+            title: "아파트 실거래가 조회 — 부르는 값 말고, 팔린 값 | 팔린아파트",
+            desc: "국토교통부에 신고된 진짜 계약만 보여드립니다. 서울·경기 전 지역 아파트 매매·전세·월세 실거래가 조회, 평당가 추이, 대출·취득세 계산기.",
+            url: origin + "/"
+          },
+          "/market": {
+            title: "아파트 시세 · 실거래가 추이 | 팔린아파트",
+            desc: "서울·경기 아파트 매매·전세 실거래 시세와 평당가 추이를 지역별로 확인하세요.",
+            url: origin + "/market"
+          },
+          "/calc": {
+            title: "아파트 대출 · 취득세 계산기 | 팔린아파트",
+            desc: "아파트 매매가 기준 주택담보대출 상환과 취득세를 계산합니다.",
+            url: origin + "/calc"
+          },
+          "/privacy": {
+            title: "개인정보처리방침 | 팔린아파트",
+            desc: "팔린아파트 개인정보 처리방침.",
+            url: origin + "/privacy"
+          }
+        };
+        var page = pages[path];
+        if (!page) return;
+        document.title = page.title;
+        var desc = document.querySelector('meta[name="description"]');
+        if (desc) desc.setAttribute("content", page.desc);
+        var canonical = document.querySelector('link[rel="canonical"]');
+        if (canonical) canonical.setAttribute("href", page.url);
+        var ogUrl = document.querySelector('meta[property="og:url"]');
+        if (ogUrl) ogUrl.setAttribute("content", page.url);
+        var ogTitle = document.querySelector('meta[property="og:title"]');
+        if (ogTitle) ogTitle.setAttribute("content", page.title);
+      })();
+    </script>
     <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>
