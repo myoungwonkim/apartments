@@ -14,16 +14,10 @@ export default function App() {
   const { pathname } = useLocation();
   useEffect(() => { window.scrollTo(0, 0); maybeShowInterstitial(); }, [pathname]);
   useEffect(() => { initAds(); }, []);
+  // 캐노니컬 URL을 현재 경로로 갱신. (제목은 각 페이지의 useTitle이 더 구체적으로 설정)
   useEffect(() => {
     const origin = 'https://apartments.nolsoopgames.com';
-    const titles = {
-      '/': '아파트 실거래가 조회 — 부르는 값 말고, 팔린 값 | 팔린아파트',
-      '/market': '아파트 시세 · 실거래가 추이 | 팔린아파트',
-      '/calc': '아파트 대출 · 취득세 계산기 | 팔린아파트',
-      '/privacy': '개인정보처리방침 | 팔린아파트',
-    };
     const key = pathname.replace(/\/+$/, '') || '/';
-    if (titles[key]) document.title = titles[key];
     const canonical = document.querySelector('link[rel="canonical"]');
     if (canonical) canonical.setAttribute('href', origin + (key === '/' ? '/' : key));
   }, [pathname]);

@@ -19,6 +19,12 @@ const pages = [
     url: "https://apartments.nolsoopgames.com/market",
   },
   {
+    file: path.join("high", "index.html"),
+    title: "아파트 신고가 경신 단지 | 팔린아파트",
+    desc: "최근 12개월 내 같은 단지·같은 면적대 최고가를 갈아치운 아파트 실거래를 지역별로 모았습니다.",
+    url: "https://apartments.nolsoopgames.com/high",
+  },
+  {
     file: path.join("calc", "index.html"),
     title: "아파트 대출 · 취득세 계산기 | 팔린아파트",
     desc: "아파트 매매가 기준 주택담보대출 상환과 취득세를 계산합니다.",
