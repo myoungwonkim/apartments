@@ -214,6 +214,16 @@ body.has-app-banner { padding-bottom: 70px; }
 .tr-right { text-align: right; flex-shrink: 0; }
 .tr-price { font-size: 15px; font-weight: 700; font-variant-numeric: tabular-nums; }
 .tr-sub { font-size: 12px; font-weight: 600; }
+.rec-badge {
+  display: inline-block; margin-left: 6px; font-size: 10.5px; font-weight: 800;
+  background: #ffe9e9; color: #d9232e; border-radius: 5px; padding: 1px 6px;
+  vertical-align: 1px;
+}
+.calc-mini {
+  border: 0.5px solid var(--line); background: var(--bg); color: var(--text-sub);
+  font-size: 10.5px; font-weight: 600; border-radius: 6px; padding: 2px 7px; margin-left: 8px;
+}
+.calc-mini:hover { border-color: var(--blue); color: var(--blue); }
 .tr-rebuild {
   display: inline-block; margin-left: 6px; font-size: 10.5px; font-weight: 700;
   background: #fff3e0; color: #c76b00; border-radius: 5px; padding: 1px 6px;

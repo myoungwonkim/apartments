@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { REGIONS, listings, fmtPrice } from '../data/mock.js';
 import {
-  REGION_DISTRICTS, fetchRecentAptTrades, fetchRecentAptRents, fetchPppSeries, outlookFromSeries,
+  REGION_DISTRICTS, fetchRecentAptTrades, fetchRecentAptRents,
+  fetchTradesMonths, seriesFromTrades, findRecords, outlookFromSeries,
 } from '../data/api.js';
 import ListingCard from '../components/ListingCard.jsx';
 import { getFavs } from '../favorites.js';
@@ -30,7 +31,8 @@ const shortOf = (name) => REGION_DISTRICTS.find((d) => d.name === name)?.short |
 const complexPath = (r) =>
   `/complex/${encodeURIComponent(r.district)}/${encodeURIComponent(r.dong)}/${encodeURIComponent(r.complex)}`;
 
-function TradeRow({ r }) {
+function TradeRow({ r, record }) {
+  const navigate = useNavigate();
   const priceColor = r.kind === '전세' ? '#0a8a4a' : r.kind === '월세' ? '#c76b00' : 'var(--text)';
   const label = r.kind === '월세' ? `${fmtPrice(r.price)}/${r.monthly}` : fmtPrice(r.price);
   const showDiff = r.kind !== '월세' && r.diffPct != null && Math.abs(r.diffPct) <= 60;
@@ -38,9 +40,21 @@ function TradeRow({ r }) {
   return (
     <Link className="trade-row" to={complexPath(r)}>
       <div>
-        <div className="tr-name">{r.complex}<span className="tr-loc">{shortOf(r.district)} {r.dong}</span></div>
+        <div className="tr-name">
+          {r.complex}
+          {record && <span className="rec-badge">신고가 🔺</span>}
+          <span className="tr-loc">{shortOf(r.district)} {r.dong}</span>
+        </div>
         <div className="tr-meta">
           {r.kind} · {r.areaM2}m² · {r.floor}층{r.builtYear ? ` · '${String(r.builtYear).slice(2)}준공` : ''} · 계약 {r.date}
+          {r.kind === '매매' && (
+            <button
+              className="calc-mini"
+              onClick={(e) => { e.preventDefault(); e.stopPropagation(); navigate(`/calc?price=${r.price}`); }}
+            >
+              월 상환액 계산
+            </button>
+          )}
         </div>
       </div>
       <div className="tr-right">
@@ -143,6 +157,7 @@ export default function Home() {
     try { return (localStorage.getItem('pallin_view') || 'list') === 'list' ? 60 : 30; } catch { return 60; }
   });
   const [outlook, setOutlook] = useState(null); // outlookFromSeries 결과 또는 null
+  const [recordKeys, setRecordKeys] = useState(null); // 신고가 거래 식별용 (특정 지역 선택 시)
 
   useTitle(district === '전체' ? null : `${district} 아파트 실거래가 조회`);
 
@@ -238,14 +253,22 @@ export default function Home() {
     return () => { alive = false; };
   }, [district, region]);
 
-  // 향후 가치 전망 (실거래 14개월 시계열 기반). 특정 지역 선택 시에만 — 전체 보기에서는 표시하지 않음.
+  // 향후 가치 전망 + 신고가 표시 (특정 지역 선택 시에만 — 14개월 매매를 한 번 받아 둘 다 계산)
   useEffect(() => {
     let alive = true;
     setOutlook(null);
+    setRecordKeys(null);
     if (district === '전체') return;
-    fetchPppSeries(district)
-      .then((s) => { if (alive) setOutlook(outlookFromSeries(s)); })
-      .catch(() => { if (alive) setOutlook(null); });
+    fetchTradesMonths(district, 14)
+      .then((trades) => {
+        if (!alive) return;
+        const series = seriesFromTrades(trades);
+        setOutlook(series ? outlookFromSeries(series) : null);
+        setRecordKeys(new Set(
+          findRecords(trades).map((t) => `${t.sortKey}|${t.dong}|${t.complex}|${t.areaM2}|${t.price}`)
+        ));
+      })
+      .catch(() => { if (alive) { setOutlook(null); setRecordKeys(null); } });
     return () => { alive = false; };
   }, [district]);
 
@@ -433,7 +456,9 @@ export default function Home() {
                       </div>
                     );
                   }
-                  out.push(<TradeRow key={i} r={r} />);
+                  const isRec = recordKeys && r.kind === '매매' &&
+                    recordKeys.has(`${r.sortKey}|${r.dong}|${r.complex}|${r.areaM2}|${r.price}`);
+                  out.push(<TradeRow key={i} r={r} record={isRec} />);
                 });
                 return out;
               })()}

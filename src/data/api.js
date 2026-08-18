@@ -208,6 +208,54 @@ export async function fetchComplexHistory(districtName, dong, complexName, month
   return { sales, rents };
 }
 
+// 최근 N개월 매매 전체 (조회 실패한 달은 건너뜀)
+export async function fetchTradesMonths(districtName, months = 14) {
+  const results = await Promise.allSettled(
+    monthKeys(months).map((ym) => fetchAptTrades(districtName, ym))
+  );
+  return results.filter((r) => r.status === 'fulfilled').flatMap((r) => r.value);
+}
+
+// 매매 목록 → 월별 평균 평당가 시계열 (fetchPppSeries와 동일한 출력 형태)
+export function seriesFromTrades(trades) {
+  const now = new Date();
+  const nowYm = `${now.getFullYear()}.${String(now.getMonth() + 1).padStart(2, '0')}`;
+  const byYm = {};
+  for (const t of trades) {
+    (byYm[t.ym] ||= []).push(t.price / (t.areaM2 / 3.3058));
+  }
+  const series = Object.entries(byYm)
+    .map(([ym, pps]) => ({
+      ym,
+      ppp: Math.round(pps.reduce((a, b) => a + b, 0) / pps.length),
+      n: pps.length,
+      partial: ym === nowYm,
+    }))
+    .sort((a, b) => a.ym.localeCompare(b.ym));
+  return series.length >= 4 ? series : null;
+}
+
+// 신고가 판정: 같은 단지·같은 면적대(전용 m² 반올림)에서
+// 조회 기간 내 이전 모든 거래보다 높은 가격에 계약된 건
+export function findRecords(trades) {
+  const asc = [...trades].sort((a, b) => a.sortKey.localeCompare(b.sortKey));
+  const maxSoFar = {};
+  const records = [];
+  for (const t of asc) {
+    const key = `${t.dong}|${t.complex}|${Math.round(t.areaM2)}`;
+    const prev = maxSoFar[key];
+    if (prev && t.price > prev.price) {
+      records.push({
+        ...t,
+        prevHigh: prev.price,
+        gainPct: ((t.price - prev.price) / prev.price) * 100,
+      });
+    }
+    if (!prev || t.price > prev.price) maxSoFar[key] = { price: t.price };
+  }
+  return records.sort((a, b) => b.sortKey.localeCompare(a.sortKey));
+}
+
 // 실거래 기반 향후 가치 전망 (구 단위, 규칙 기반).
 // 전부 실거래 신고 데이터에서 계산: 시세 모멘텀(3개월·전년), 거래량 변화.
 // 매물·호가·급매 정보는 공공데이터에 없으므로 반영하지 않는다 (UI에 고지할 것).

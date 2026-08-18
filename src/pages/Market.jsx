@@ -121,6 +121,19 @@ export default function Market() {
         </select>
       </div>
 
+      <p style={{ margin: '0 0 16px' }}>
+        {(() => {
+          const now = new Date();
+          const p = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+          const ym = `${p.getFullYear()}${String(p.getMonth() + 1).padStart(2, '0')}`;
+          return (
+            <Link to={`/report/${encodeURIComponent(district)}/${ym}`} className="chip" style={{ textDecoration: 'none' }}>
+              📄 {district} {p.getMonth() + 1}월 실거래 리포트 보기 →
+            </Link>
+          );
+        })()}
+      </p>
+
       <div className="stat-row">
         <div className="stat">
           <div className="label">{statLabel}</div>

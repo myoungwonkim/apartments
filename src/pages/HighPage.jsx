@@ -1,29 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { REGIONS, fmtPrice } from '../data/mock.js';
-import { REGION_DISTRICTS, fetchRecentAptTrades } from '../data/api.js';
+import { REGION_DISTRICTS, fetchRecentAptTrades, findRecords } from '../data/api.js';
 import useTitle from '../useTitle.js';
-
-// 신고가 판정: 같은 단지·같은 면적대(전용 m² 반올림)에서
-// 이전 12개월 내 모든 거래보다 높은 가격에 계약된 건
-function findRecords(trades) {
-  const asc = [...trades].sort((a, b) => a.sortKey.localeCompare(b.sortKey));
-  const maxSoFar = {}; // key → { price, count }
-  const records = [];
-  for (const t of asc) {
-    const key = `${t.dong}|${t.complex}|${Math.round(t.areaM2)}`;
-    const prev = maxSoFar[key];
-    if (prev && t.price > prev.price) {
-      records.push({
-        ...t,
-        prevHigh: prev.price,
-        gainPct: ((t.price - prev.price) / prev.price) * 100,
-      });
-    }
-    if (!prev || t.price > prev.price) maxSoFar[key] = { price: t.price };
-  }
-  return records.sort((a, b) => b.sortKey.localeCompare(a.sortKey));
-}
 
 export default function HighPage() {
   const [searchParams, setSearchParams] = useSearchParams();

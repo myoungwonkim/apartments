@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { fmtPrice } from '../data/mock.js';
 import useTitle from '../useTitle.js';
 
@@ -26,8 +27,8 @@ function Field({ label, value, onChange, suffix, ...rest }) {
   );
 }
 
-function LoanLimit() {
-  const [price, setPrice] = useState(90000);   // 만원
+function LoanLimit({ initPrice }) {
+  const [price, setPrice] = useState(initPrice || 90000);   // 만원
   const [income, setIncome] = useState(7000);  // 연소득 만원
   const [existingDebt, setExistingDebt] = useState(0); // 기존 연 원리금 만원
   const [rate, setRate] = useState(4.2);
@@ -108,8 +109,8 @@ function Repayment() {
   );
 }
 
-function AcqTax() {
-  const [price, setPrice] = useState(90000);
+function AcqTax({ initPrice }) {
+  const [price, setPrice] = useState(initPrice || 90000);
   const [houses, setHouses] = useState('1주택');
   const [regulated, setRegulated] = useState('비조정');
   const [large, setLarge] = useState('85m² 이하');
@@ -164,27 +165,28 @@ function AcqTax() {
   );
 }
 
-const TABS = [
-  { key: '대출 한도', comp: <LoanLimit /> },
-  { key: '월 상환액', comp: <Repayment /> },
-  { key: '취득세', comp: <AcqTax /> },
-];
+const TAB_KEYS = ['대출 한도', '월 상환액', '취득세'];
 
 export default function Calc() {
   const [tab, setTab] = useState('대출 한도');
+  const [sp] = useSearchParams();
+  // 실거래 목록의 "월 상환액 계산" 버튼에서 가격(만원)을 전달받음
+  const initPrice = Math.max(0, Math.round(Number(sp.get('price')))) || null;
   useTitle('부동산 계산기 — 주담대 한도·월 상환액·취득세');
   return (
     <div className="page container" style={{ maxWidth: 620 }}>
       <h1 className="page-title">계산기</h1>
       <p className="page-sub">대출 한도부터 세금까지, 자금 계획을 미리 세워보세요.</p>
       <div className="calc-tabs">
-        {TABS.map((t) => (
-          <button key={t.key} className={`chip ${tab === t.key ? 'on' : ''}`} onClick={() => setTab(t.key)}>
-            {t.key}
+        {TAB_KEYS.map((k) => (
+          <button key={k} className={`chip ${tab === k ? 'on' : ''}`} onClick={() => setTab(k)}>
+            {k}
           </button>
         ))}
       </div>
-      {TABS.find((t) => t.key === tab).comp}
+      {tab === '대출 한도' && <LoanLimit initPrice={initPrice} />}
+      {tab === '월 상환액' && <Repayment />}
+      {tab === '취득세' && <AcqTax initPrice={initPrice} />}
     </div>
   );
 }

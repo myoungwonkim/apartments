@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import {
   LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid,
 } from 'recharts';
@@ -15,8 +15,24 @@ export default function ComplexDetail() {
   const [data, setData] = useState({ sales: [], rents: [] });
   const [status, setStatus] = useState('loading'); // loading | ok | empty | error
   const [tab, setTab] = useState('매매');
+  const navigate = useNavigate();
   const favKey = { district, dong, name };
   const [faved, setFaved] = useState(() => isFav(favKey));
+
+  // 단지 비교: 첫 단지를 담아두고, 다른 단지에서 비교 실행
+  const meKey = `${district}|${dong}|${name}`;
+  const [compareBase, setCompareBase] = useState(() => {
+    try { return localStorage.getItem('pallin_compare') || null; } catch { return null; }
+  });
+  const handleCompare = () => {
+    if (compareBase && compareBase !== meKey) {
+      navigate(`/compare?a=${encodeURIComponent(compareBase)}&b=${encodeURIComponent(meKey)}`);
+      return;
+    }
+    try { localStorage.setItem('pallin_compare', meKey); } catch { /* 무시 */ }
+    setCompareBase(meKey);
+  };
+  const compareBaseName = compareBase && compareBase !== meKey ? compareBase.split('|')[2] : null;
 
   useTitle(`${name} 실거래가 — ${district} ${dong} 매매·전세 이력`);
 
@@ -94,6 +110,9 @@ export default function ComplexDetail() {
           onClick={() => setFaved(toggleFav(favKey))}
         >
           {faved ? '★ 관심 단지' : '☆ 관심 등록'}
+        </button>
+        <button className="chip" style={{ fontSize: 13 }} onClick={handleCompare}>
+          {compareBaseName ? `⚖ ${compareBaseName}와 비교` : compareBase === meKey ? '⚖ 담김 — 다른 단지에서 비교' : '⚖ 비교 담기'}
         </button>
       </h1>
       <p className="page-sub">
