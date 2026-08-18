@@ -3,7 +3,7 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { REGIONS, listings, fmtPrice } from '../data/mock.js';
 import {
   REGION_DISTRICTS, fetchRecentAptTrades, fetchRecentAptRents,
-  fetchTradesMonths, seriesFromTrades, findRecords, outlookFromSeries,
+  fetchTradesMonths, seriesFromTrades, findRecords, declineShareFromTrades, outlookFromSeries,
 } from '../data/api.js';
 import ListingCard from '../components/ListingCard.jsx';
 import { getFavs } from '../favorites.js';
@@ -263,7 +263,9 @@ export default function Home() {
       .then((trades) => {
         if (!alive) return;
         const series = seriesFromTrades(trades);
-        setOutlook(series ? outlookFromSeries(series) : null);
+        const baseYm = series?.filter((d) => !d.partial).at(-1)?.ym;
+        const decline = declineShareFromTrades(trades, baseYm);
+        setOutlook(series ? outlookFromSeries(series, decline) : null);
         setRecordKeys(new Set(
           findRecords(trades).map((t) => `${t.sortKey}|${t.dong}|${t.complex}|${t.areaM2}|${t.price}`)
         ));
@@ -410,6 +412,7 @@ export default function Home() {
             <span className="cond-item">3개월 <b>{outlook.mom3 >= 0 ? '+' : ''}{outlook.mom3?.toFixed(1)}%</b></span>
             {outlook.yoy != null && <span className="cond-item">전년 <b>{outlook.yoy >= 0 ? '+' : ''}{outlook.yoy.toFixed(1)}%</b></span>}
             <span className="cond-item">기준월 거래 <b>{outlook.cur.n}건</b></span>
+            {outlook.decline && <span className="cond-item">하락 거래 비중 <b>{outlook.decline.share}%</b></span>}
           </div>
           <div style={{ marginTop: 8 }}>
             {outlook.factors.map((f, i) => (

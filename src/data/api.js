@@ -256,10 +256,30 @@ export function findRecords(trades) {
   return records.sort((a, b) => b.sortKey.localeCompare(a.sortKey));
 }
 
+// 하락 거래 비중: 기준월(windowYm, 'YYYY.MM') 거래 중
+// 같은 단지·같은 면적대의 직전 거래보다 낮은 가격에 계약된 비율.
+// 표본(직전 거래가 있는 계약)이 5건 미만이면 null — 신뢰할 수 없는 비율은 표시하지 않는다.
+export function declineShareFromTrades(trades, windowYm) {
+  if (!windowYm) return null;
+  const asc = [...trades].sort((a, b) => a.sortKey.localeCompare(b.sortKey));
+  const last = {};
+  let down = 0, total = 0;
+  for (const t of asc) {
+    const key = `${t.dong}|${t.complex}|${Math.round(t.areaM2)}`;
+    const prev = last[key];
+    if (t.ym === windowYm && prev != null) {
+      total++;
+      if (t.price < prev) down++;
+    }
+    last[key] = t.price;
+  }
+  return total >= 5 ? { share: Math.round((down / total) * 100), n: total } : null;
+}
+
 // 실거래 기반 향후 가치 전망 (구 단위, 규칙 기반).
-// 전부 실거래 신고 데이터에서 계산: 시세 모멘텀(3개월·전년), 거래량 변화.
+// 전부 실거래 신고 데이터에서 계산: 시세 모멘텀(3개월·전년), 거래량 변화, 하락 거래 비중.
 // 매물·호가·급매 정보는 공공데이터에 없으므로 반영하지 않는다 (UI에 고지할 것).
-export function outlookFromSeries(series) {
+export function outlookFromSeries(series, decline = null) {
   const fulls = series.filter((d) => !d.partial);
   if (fulls.length < 5) return null;
   const cur = fulls[fulls.length - 1];
@@ -290,13 +310,19 @@ export function outlookFromSeries(series) {
     else factors.push({ dir: '0', text: `거래량 ${cur.n}건 — 직전 3개월과 비슷한 수준` });
   }
 
+  if (decline) {
+    if (decline.share >= 60) { score -= 1; factors.push({ dir: '-', text: `직전 거래보다 낮게 계약된 비율 ${decline.share}% (${decline.n}건 중) — 하락 거래 우위` }); }
+    else if (decline.share <= 35) { score += 1; factors.push({ dir: '+', text: `직전 거래보다 낮게 계약된 비율 ${decline.share}% (${decline.n}건 중) — 상승 거래 우위` }); }
+    else factors.push({ dir: '0', text: `하락 거래 비중 ${decline.share}% — 상승·하락 혼조` });
+  }
+
   const grade =
     score >= 3 ? { label: '상승 여력 높음', cls: 'up2' } :
     score >= 1 ? { label: '완만한 상승 기대', cls: 'up1' } :
     score >= -1 ? { label: '보합 전망', cls: 'flat' } :
     { label: '하방 압력 주의', cls: 'down' };
 
-  return { grade, factors, cur, mom3, yoy, volChg };
+  return { grade, factors, cur, mom3, yoy, volChg, decline };
 }
 
 // 월별 평균 평당가 시계열 (만원/평). 실패한 달은 건너뛰고, 현재 진행 중인 달은 partial 표시.

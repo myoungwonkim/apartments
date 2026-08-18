@@ -4,7 +4,10 @@ import {
   BarChart, Bar, Cell, LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid,
 } from 'recharts';
 import { DISTRICTS, REGIONS, getPriceSeries, getRecentTrades, getMarketCondition, fmtPrice, DATA_SOURCE } from '../data/mock.js';
-import { REGION_DISTRICTS, fetchRecentAptTrades, fetchRecentAptRents, fetchPppSeries } from '../data/api.js';
+import {
+  REGION_DISTRICTS, fetchRecentAptTrades, fetchRecentAptRents,
+  fetchTradesMonths, seriesFromTrades, declineShareFromTrades,
+} from '../data/api.js';
 import useTitle from '../useTitle.js';
 
 const Delta = ({ v }) =>
@@ -24,6 +27,7 @@ export default function Market() {
   const [tradeStatus, setTradeStatus] = useState('loading'); // loading | real | demo
   const [pppSeries, setPppSeries] = useState([]);
   const [pppStatus, setPppStatus] = useState('loading');     // loading | real | demo
+  const [decline, setDecline] = useState(null);              // 하락 거래 비중 { share, n }
   const [rents, setRents] = useState([]);
   const [rentStatus, setRentStatus] = useState('loading');   // loading | real | error
   const [rentType, setRentType] = useState('전세');
@@ -46,12 +50,21 @@ export default function Market() {
     return () => { alive = false; };
   }, [district]);
 
-  // 평당가 시계열 (13개월)
+  // 평당가 시계열(14개월) + 하락 거래 비중 — 같은 조회 데이터로 함께 계산
   useEffect(() => {
     let alive = true;
     setPppStatus('loading');
-    fetchPppSeries(district)
-      .then((s) => { if (alive) { setPppSeries(s); setPppStatus('real'); } })
+    setDecline(null);
+    fetchTradesMonths(district, 14)
+      .then((trades) => {
+        if (!alive) return;
+        const s = seriesFromTrades(trades);
+        if (!s) { setPppStatus('demo'); return; }
+        setPppSeries(s);
+        const baseYm = s.filter((d) => !d.partial).at(-1)?.ym;
+        setDecline(declineShareFromTrades(trades, baseYm));
+        setPppStatus('real');
+      })
       .catch(() => { if (alive) setPppStatus('demo'); });
     return () => { alive = false; };
   }, [district]);
@@ -156,8 +169,8 @@ export default function Market() {
           <div className="value">{pppStatus === 'real' ? `${statN}건` : cond ? `${cond.saleCount}건` : '-'}</div>
         </div>
         <div className="stat">
-          <div className="label">급매 비중 (데모)</div>
-          <div className="value">{cond ? `${cond.bargainShare}%` : '-'}</div>
+          <div className="label">하락 거래 비중 (기준월)</div>
+          <div className="value">{pppStatus === 'loading' ? '…' : decline ? `${decline.share}%` : '-'}</div>
         </div>
       </div>
 
