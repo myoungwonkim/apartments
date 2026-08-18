@@ -5,6 +5,7 @@ import {
 } from 'recharts';
 import { fmtPrice } from '../data/mock.js';
 import { fetchComplexHistory } from '../data/api.js';
+import { isFav, toggleFav } from '../favorites.js';
 import useTitle from '../useTitle.js';
 
 const LINE_COLORS = ['#3182f6', '#0a8a4a', '#c76b00'];
@@ -14,6 +15,8 @@ export default function ComplexDetail() {
   const [data, setData] = useState({ sales: [], rents: [] });
   const [status, setStatus] = useState('loading'); // loading | ok | empty | error
   const [tab, setTab] = useState('매매');
+  const favKey = { district, dong, name };
+  const [faved, setFaved] = useState(() => isFav(favKey));
 
   useTitle(`${name} 실거래가 — ${district} ${dong} 매매·전세 이력`);
 
@@ -83,7 +86,16 @@ export default function ComplexDetail() {
         <span className="lc-district">{district} {dong}</span>
         {status === 'ok' && <span className="badge">실데이터</span>}
       </div>
-      <h1 className="page-title">{name}</h1>
+      <h1 className="page-title" style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+        {name}
+        <button
+          className={`chip ${faved ? 'on' : ''}`}
+          style={{ fontSize: 13 }}
+          onClick={() => setFaved(toggleFav(favKey))}
+        >
+          {faved ? '★ 관심 단지' : '☆ 관심 등록'}
+        </button>
+      </h1>
       <p className="page-sub">
         최근 12개월 거래 이력{builtYear ? ` · ${builtYear}년 준공` : ''}
         {status === 'ok' && <> · 매매 {sales.length}건 · 전세 {rents.filter((r) => r.type === '전세').length}건 · 월세 {rents.filter((r) => r.type === '월세').length}건</>}

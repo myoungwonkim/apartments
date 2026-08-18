@@ -1,10 +1,11 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { REGIONS, listings, fmtPrice } from '../data/mock.js';
 import {
   REGION_DISTRICTS, fetchRecentAptTrades, fetchRecentAptRents, fetchPppSeries, outlookFromSeries,
 } from '../data/api.js';
 import ListingCard from '../components/ListingCard.jsx';
+import { getFavs } from '../favorites.js';
 import useTitle from '../useTitle.js';
 
 const TYPES = ['전체', '매매', '전세', '월세'];
@@ -94,16 +95,40 @@ function TradeCard({ r }) {
 }
 
 export default function Home() {
-  const [region, setRegion] = useState('서울');
-  const [district, setDistrict] = useState('전체');
+  const [searchParams, setSearchParams] = useSearchParams();
+  // URL 쿼리에서 초기 검색조건 복원 (공유·북마크 지원)
+  const initDistrict = (() => {
+    const d = searchParams.get('district');
+    return d && REGION_DISTRICTS.some((x) => x.name === d) ? d : '전체';
+  })();
+  const initRegion = initDistrict !== '전체'
+    ? REGION_DISTRICTS.find((x) => x.name === initDistrict).region
+    : (REGIONS.includes(searchParams.get('region')) ? searchParams.get('region') : '서울');
+
+  const [region, setRegion] = useState(initRegion);
+  const [district, setDistrict] = useState(initDistrict);
   const [progress, setProgress] = useState({ done: 0, total: 1 });
   const [failedDistricts, setFailedDistricts] = useState([]);
-  const [type, setType] = useState('전체');
-  const [query, setQuery] = useState('');
-  const [areaKey, setAreaKey] = useState('전체');
-  const [priceMin, setPriceMin] = useState(''); // 억 단위
-  const [priceMax, setPriceMax] = useState('');
-  const [sort, setSort] = useState('recent');
+  const [type, setType] = useState(TYPES.includes(searchParams.get('type')) ? searchParams.get('type') : '전체');
+  const [query, setQuery] = useState(searchParams.get('q') || '');
+  const [areaKey, setAreaKey] = useState(AREA_RANGES.some((a) => a.key === searchParams.get('area')) ? searchParams.get('area') : '전체');
+  const [priceMin, setPriceMin] = useState(searchParams.get('min') || ''); // 억 단위
+  const [priceMax, setPriceMax] = useState(searchParams.get('max') || '');
+  const [sort, setSort] = useState(SORTS.some((s) => s.key === searchParams.get('sort')) ? searchParams.get('sort') : 'recent');
+
+  // 검색조건이 바뀌면 URL에 반영 (기본값은 생략해 주소를 짧게 유지)
+  useEffect(() => {
+    const p = {};
+    if (region !== '서울') p.region = region;
+    if (district !== '전체') p.district = district;
+    if (type !== '전체') p.type = type;
+    if (query.trim()) p.q = query.trim();
+    if (areaKey !== '전체') p.area = areaKey;
+    if (priceMin !== '') p.min = priceMin;
+    if (priceMax !== '') p.max = priceMax;
+    if (sort !== 'recent') p.sort = sort;
+    setSearchParams(p, { replace: true });
+  }, [region, district, type, query, areaKey, priceMin, priceMax, sort, setSearchParams]);
   const [view, setViewState] = useState(() => {
     try { return localStorage.getItem('pallin_view') || 'list'; } catch { return 'list'; }
   });
@@ -266,6 +291,21 @@ export default function Home() {
         호가 매물이 아니라 국토부에 신고된 <b>실제 계약</b>입니다 (아파트 매매 3개월 · 전월세 2개월).
         {status === 'real' && <> {district === '전체' ? `${region} 전체` : district} <b>{records.length.toLocaleString()}건</b>{filtered.length !== records.length && <> · 필터 결과 {filtered.length.toLocaleString()}건</>}</>}
       </p>
+
+      {getFavs().length > 0 && (
+        <div className="filters" style={{ marginBottom: 10 }}>
+          <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-weak)', alignSelf: 'center' }}>⭐ 관심 단지</span>
+          {getFavs().map((f) => (
+            <Link
+              key={`${f.district}|${f.dong}|${f.name}`}
+              className="chip"
+              to={`/complex/${encodeURIComponent(f.district)}/${encodeURIComponent(f.dong)}/${encodeURIComponent(f.name)}`}
+            >
+              {f.name}
+            </Link>
+          ))}
+        </div>
+      )}
 
       <div className="filters">
         {REGIONS.map((r) => (
